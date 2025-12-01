@@ -51,3 +51,5 @@ data/
 
 # Streamlit (keep config.toml for deployment)
 .streamlit/secrets.toml
+**/secrets.toml
+src/frontend/.streamlit/secrets.toml
