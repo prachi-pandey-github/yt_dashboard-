@@ -55,14 +55,14 @@ A cloud-native system for real-time YouTube video monitoring with Agentic AI cap
    - In your Streamlit Cloud app settings, add these secrets:
    ```toml
    YOUTUBE_API_KEY = "your_youtube_api_key_here"
-   OPENAI_API_KEY = "your_openai_api_key_here"
+   GEMINI_API_KEY = "your_gemini_api_key_here"
    MONGODB_URI = "your_mongodb_connection_string"
    DATABASE_NAME = "youtube_monitoring"
    ```
 
 4. **Get your API keys**
    - **YouTube API**: [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-   - **OpenAI API**: [OpenAI Platform](https://platform.openai.com/api-keys)
+   - **Gemini API**: [Google AI Studio](https://aistudio.google.com/app/apikey)
    - **MongoDB**: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free tier available)
 
 ### Environment Variables
@@ -70,7 +70,7 @@ A cloud-native system for real-time YouTube video monitoring with Agentic AI cap
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `YOUTUBE_API_KEY` | YouTube Data API v3 key | ✅ |
-| `OPENAI_API_KEY` | OpenAI API key for chatbot | ✅ |
+| `GEMINI_API_KEY` | Google Gemini API key for chatbot | ✅ |
 | `MONGODB_URI` | MongoDB connection string | ✅ |
 | `DATABASE_NAME` | Database name (default: youtube_monitoring) | ✅ |
 

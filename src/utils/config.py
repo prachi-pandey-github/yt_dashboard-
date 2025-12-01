@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "your-jwt-secret-key"
     
     # AI/ML - Optional
-    openai_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
     
     # Deployment Platforms (Optional)
@@ -68,9 +68,9 @@ class Settings(BaseSettings):
         return self.get_secret('YOUTUBE_API_KEY', self.youtube_api_key)
     
     @property
-    def effective_openai_api_key(self) -> Optional[str]:
-        """Get OpenAI API key from secrets or config"""
-        return self.get_secret('OPENAI_API_KEY', self.openai_api_key)
+    def effective_gemini_api_key(self) -> Optional[str]:
+        """Get Gemini API key from secrets or config"""
+        return self.get_secret('GEMINI_API_KEY', self.gemini_api_key)
     
     class Config:
         env_file = ".env"

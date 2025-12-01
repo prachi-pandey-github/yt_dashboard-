@@ -6,8 +6,8 @@ import logging
 from typing import Dict, Any
 import json
 
-# Use LangChain instead of Google ADK
-from langchain_openai import OpenAI, ChatOpenAI
+# Use LangChain with Google Gemini
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import Tool
 import logging
@@ -28,11 +28,11 @@ class YouTubeChatbot:
     
     def _setup_llm(self):
         """Setup language model"""
-        api_key = self.settings.effective_openai_api_key
+        api_key = self.settings.effective_gemini_api_key
         if api_key:
-            return ChatOpenAI(
-                openai_api_key=api_key,
-                model_name="gpt-3.5-turbo",
+            return ChatGoogleGenerativeAI(
+                google_api_key=api_key,
+                model="gemini-pro",
                 temperature=0
             )
         else:
