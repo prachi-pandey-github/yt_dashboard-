@@ -193,18 +193,51 @@ def render_analytics_dashboard():
             try:
                 st.write(f"📊 Generating report for channel: {channel_option}")
                 tools = st.session_state.tools  # Use tools from session state
+                
+                # Debug: Check database connection and data availability
+                st.write(f"Debug - Using JSON fallback: {tools.db_client.use_json_fallback}")
+                if tools.db_client.use_json_fallback:
+                    all_videos = tools.db_client.json_storage.get_all_videos()
+                    st.write(f"Debug - Total videos in storage: {len(all_videos)}")
+                    
+                    # Check channel mapping
+                    mapping = tools.get_channel_mapping()
+                    channel_id = mapping.get(channel_option.lower())
+                    st.write(f"Debug - Channel '{channel_option}' maps to: {channel_id}")
+                    
+                    if channel_id:
+                        matching_videos = [v for v in all_videos if v.get('channel_id') == channel_id or v.get('channel_name') == channel_option]
+                        st.write(f"Debug - Videos found for this channel: {len(matching_videos)}")
+                
                 stats = tools.get_upload_statistics(channel_option, days=30)
                 
                 st.write("Debug - Stats received:", stats)
                 
                 if 'error' in stats:
                     st.error(f"Error: {stats['error']}")
-                elif 'plot_html' in stats:
-                    st.components.v1.html(stats['plot_html'], height=800)
-                elif 'statistics' in stats:
-                    st.json(stats['statistics'])
-                else:
-                    st.warning("No data received from the report generation")
+                    st.info("Trying with a fresh tools instance...")
+                    
+                    # Fallback: Try with a new tools instance
+                    try:
+                        fresh_tools = YouTubeAnalysisTools()
+                        fresh_stats = fresh_tools.get_upload_statistics(channel_option, days=30)
+                        
+                        if 'error' not in fresh_stats:
+                            st.success("Fresh instance worked! Using those results:")
+                            stats = fresh_stats
+                        else:
+                            st.error(f"Fresh instance also failed: {fresh_stats['error']}")
+                    except Exception as e:
+                        st.error(f"Fresh instance exception: {str(e)}")
+                
+                # Display results if successful
+                if 'error' not in stats:
+                    if 'plot_html' in stats:
+                        st.components.v1.html(stats['plot_html'], height=800)
+                    elif 'statistics' in stats:
+                        st.json(stats['statistics'])
+                    else:
+                        st.warning("No data received from the report generation")
                     
             except Exception as e:
                 st.error(f"Exception occurred: {str(e)}")
