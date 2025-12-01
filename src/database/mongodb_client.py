@@ -44,8 +44,9 @@ class MongoDBClient:
     def _connect(self):
         """Establish MongoDB connection"""
         try:
+            mongodb_uri = self.settings.effective_mongodb_uri
             self.client = MongoClient(
-                self.settings.mongodb_uri,
+                mongodb_uri,
                 serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=5000,
                 socketTimeoutMS=5000
@@ -64,7 +65,14 @@ class MongoDBClient:
             logger.info("✅ Successfully connected to MongoDB")
             
         except ConnectionFailure as e:
-            logger.error(f"❌ MongoDB connection failed: {e}")
+            error_msg = f"❌ MongoDB connection failed: {e}"
+            if "localhost" in mongodb_uri:
+                error_msg += "\n💡 For Streamlit Cloud deployment, you need to use MongoDB Atlas instead of localhost. Please configure MONGODB_URI in Streamlit secrets."
+            logger.error(error_msg)
+            raise ConnectionFailure(error_msg)
+        except Exception as e:
+            error_msg = f"❌ Unexpected MongoDB error: {e}"
+            logger.error(error_msg)
             raise
     
     def _create_indexes(self):

@@ -33,9 +33,10 @@ class YouTubeDataExtractor:
     def _initialize_youtube_api(self):
         """Initialize YouTube Data API client"""
         try:
-            if self.settings.youtube_api_key:
-                self.youtube_api = build('youtube', 'v3', 
-                                       developerKey=self.settings.youtube_api_key)
+            api_key = self.settings.effective_youtube_api_key
+            if api_key:
+                self.youtube = build('youtube', 'v3',
+                                   developerKey=api_key)
                 logger.info("✅ YouTube Data API initialized")
         except Exception as e:
             logger.warning(f"⚠️ YouTube Data API initialization failed: {e}")

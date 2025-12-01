@@ -28,9 +28,10 @@ class YouTubeChatbot:
     
     def _setup_llm(self):
         """Setup language model"""
-        if self.settings.openai_api_key:
+        api_key = self.settings.effective_openai_api_key
+        if api_key:
             return ChatOpenAI(
-                openai_api_key=self.settings.openai_api_key,
+                openai_api_key=api_key,
                 model_name="gpt-3.5-turbo",
                 temperature=0
             )

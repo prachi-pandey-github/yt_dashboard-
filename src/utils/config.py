@@ -4,6 +4,8 @@ Configuration management using Pydantic settings - No AWS dependencies
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 from functools import lru_cache
+import os
+import streamlit as st
 
 class Settings(BaseSettings):
     """Application settings - Cloud agnostic"""
@@ -37,6 +39,38 @@ class Settings(BaseSettings):
     # Deployment Platforms (Optional)
     railway_api_key: Optional[str] = None
     render_api_key: Optional[str] = None
+    
+    def get_secret(self, key: str, default: any = None):
+        """Get secret from Streamlit secrets or environment variable"""
+        try:
+            # Try Streamlit secrets first (for cloud deployment)
+            import streamlit as st
+            if hasattr(st, 'secrets') and key in st.secrets:
+                return st.secrets[key]
+        except ImportError:
+            # Streamlit not available (local development)
+            pass
+        except Exception:
+            # Streamlit available but secrets not configured
+            pass
+        
+        # Fall back to environment variable
+        return os.getenv(key, default)
+    
+    @property
+    def effective_mongodb_uri(self) -> str:
+        """Get MongoDB URI from secrets or config"""
+        return self.get_secret('MONGODB_URI', self.mongodb_uri)
+    
+    @property 
+    def effective_youtube_api_key(self) -> Optional[str]:
+        """Get YouTube API key from secrets or config"""
+        return self.get_secret('YOUTUBE_API_KEY', self.youtube_api_key)
+    
+    @property
+    def effective_openai_api_key(self) -> Optional[str]:
+        """Get OpenAI API key from secrets or config"""
+        return self.get_secret('OPENAI_API_KEY', self.openai_api_key)
     
     class Config:
         env_file = ".env"
