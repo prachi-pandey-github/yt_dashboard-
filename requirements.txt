@@ -18,8 +18,10 @@ google-auth-oauthlib
 google-auth-httplib2
 
 # AI/LLM
-langchain
-openai
+langchain>=0.1.0
+langchain-openai>=0.1.0
+langchain-core>=0.1.0
+openai>=1.0.0
 
 # HTTP Requests & CORS
 aiohttp
@@ -48,9 +50,10 @@ asyncio-throttle
 feedparser
 xmltodict
 
-# Development & Testing
-pytest
-pytest-asyncio
+# Plotting/Visualization (for Streamlit charts)
+plotly
+matplotlib
 
-# Additional utilities
+# Additional dependencies that might be needed
 typing-extensions
+pydantic[email]

@@ -49,5 +49,5 @@ data/
 *.jpg
 *.jpeg
 
-# Streamlit
-.streamlit/
+# Streamlit (keep config.toml for deployment)
+.streamlit/secrets.toml
