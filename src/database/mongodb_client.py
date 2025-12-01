@@ -154,6 +154,19 @@ class MongoDBClient:
     
     def get_recent_videos(self, limit: int = 10, channel_id: Optional[str] = None) -> List[Dict]:
         """Get most recent videos, optionally filtered by channel"""
+        if self.use_json_fallback:
+            videos = self.json_storage.get_all_videos()
+            if channel_id:
+                videos = [v for v in videos if v.get('channel_id') == channel_id or v.get('channel_name') == channel_id]
+            
+            # Sort by upload_date (most recent first)
+            try:
+                videos.sort(key=lambda x: x.get('upload_date', ''), reverse=True)
+            except:
+                pass
+            
+            return videos[:limit]
+        
         query = {}
         if channel_id:
             query["channel_id"] = channel_id
@@ -164,6 +177,18 @@ class MongoDBClient:
     
     def get_videos_by_channel(self, channel_id: str, limit: int = 50) -> List[Dict]:
         """Get videos by channel ID"""
+        if self.use_json_fallback:
+            videos = self.json_storage.get_all_videos()
+            channel_videos = [v for v in videos if v.get('channel_id') == channel_id or v.get('channel_name') == channel_id]
+            
+            # Sort by upload_date (most recent first)
+            try:
+                channel_videos.sort(key=lambda x: x.get('upload_date', ''), reverse=True)
+            except:
+                pass
+            
+            return channel_videos[:limit]
+        
         return list(self.collection.find({"channel_id": channel_id})
                    .sort("upload_date", -1)
                    .limit(limit))
@@ -199,6 +224,9 @@ class MongoDBClient:
     
     def get_channel_stats(self, channel_id: str) -> Dict[str, Any]:
         """Get statistics for a channel"""
+        if self.use_json_fallback:
+            return self._get_channel_stats_json(channel_id)
+        
         pipeline = [
             {"$match": {"channel_id": channel_id}},
             {"$group": {
@@ -214,6 +242,32 @@ class MongoDBClient:
         
         result = list(self.collection.aggregate(pipeline))
         return result[0] if result else {}
+    
+    def _get_channel_stats_json(self, channel_id: str) -> Dict[str, Any]:
+        """Get channel statistics from JSON storage"""
+        try:
+            videos = self.json_storage.get_all_videos()
+            channel_videos = [v for v in videos if v.get('channel_id') == channel_id or v.get('channel_name') == channel_id]
+            
+            if not channel_videos:
+                return {}
+            
+            total_videos = len(channel_videos)
+            total_views = sum(int(v.get('view_count', 0)) for v in channel_videos)
+            total_likes = sum(int(v.get('like_count', 0)) for v in channel_videos)
+            
+            return {
+                "_id": channel_id,
+                "total_videos": total_videos,
+                "total_views": total_views,
+                "total_likes": total_likes,
+                "average_views": total_views / total_videos if total_videos > 0 else 0,
+                "average_likes": total_likes / total_videos if total_videos > 0 else 0,
+                "latest_upload": max((v.get('upload_date') for v in channel_videos), default=None)
+            }
+        except Exception as e:
+            logger.error(f"Error getting channel stats from JSON: {e}")
+            return {}
     
     def close_connection(self):
         """Close MongoDB connection"""

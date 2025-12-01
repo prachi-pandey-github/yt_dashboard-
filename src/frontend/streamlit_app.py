@@ -122,31 +122,57 @@ def render_analytics_dashboard():
     """Render analytics dashboard in a separate tab"""
     st.header("📈 Analytics Dashboard")
     
-    tools = st.session_state.tools
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Channel Statistics")
-        channel_stats = tools.generate_engagement_report()
+    try:
+        tools = st.session_state.tools
+        col1, col2 = st.columns(2)
         
-        if 'report' in channel_stats:
-            for channel_name, stats in channel_stats['report'].items():
-                with st.expander(f"📺 {channel_name}"):
-                    st.metric("Total Videos", stats['total_videos'])
-                    st.metric("Total Views", f"{stats['total_views']:,}")
-                    st.metric("Average Views", f"{stats['average_views']:,.0f}")
-                    st.metric("Average Likes", f"{stats['average_likes']:,.0f}")
-    
-    with col2:
-        st.subheader("Recent Activity")
-        recent_activity = tools.get_recent_activity(hours=24)
+        with col1:
+            st.subheader("Channel Statistics")
+            try:
+                channel_stats = tools.generate_engagement_report()
+                
+                if channel_stats and 'report' in channel_stats:
+                    for channel_name, stats in channel_stats['report'].items():
+                        with st.expander(f"📺 {channel_name}"):
+                            st.metric("Total Videos", stats.get('total_videos', 0))
+                            st.metric("Total Views", f"{stats.get('total_views', 0):,}")
+                            st.metric("Average Views", f"{stats.get('average_views', 0):,.0f}")
+                            st.metric("Average Likes", f"{stats.get('average_likes', 0):,.0f}")
+                else:
+                    st.info("No channel statistics available yet. Add some videos to see analytics!")
+            except Exception as e:
+                st.error(f"Error loading channel statistics: {str(e)}")
+                logging.error(f"Error in channel stats: {e}")
         
-        st.metric("Videos Last 24h", recent_activity['total_videos'])
-        
-        for channel, data in recent_activity['channels'].items():
-            st.write(f"**{channel}**: {data['count']} videos")
-            for title in data['recent_titles'][:2]:
-                st.caption(f"• {title[:60]}...")
+        with col2:
+            st.subheader("Recent Activity")
+            try:
+                recent_activity = tools.get_recent_activity(hours=24)
+                
+                if recent_activity and 'total_videos' in recent_activity:
+                    st.metric("Videos Last 24h", recent_activity.get('total_videos', 0))
+                    
+                    channels_data = recent_activity.get('channels', {})
+                    if channels_data:
+                        for channel, data in channels_data.items():
+                            st.write(f"**{channel}**: {data.get('count', 0)} videos")
+                            recent_titles = data.get('recent_titles', [])
+                            for title in recent_titles[:2]:
+                                st.caption(f"• {title[:60]}...")
+                    else:
+                        st.info("No recent activity in the last 24 hours.")
+                else:
+                    st.info("No recent activity data available.")
+            except Exception as e:
+                st.error(f"Error loading recent activity: {str(e)}")
+                logging.error(f"Error in recent activity: {e}")
+                
+    except AttributeError as e:
+        st.error("Tools not properly initialized. Please refresh the page.")
+        logging.error(f"AttributeError in analytics dashboard: {e}")
+    except Exception as e:
+        st.error(f"Unexpected error in analytics dashboard: {str(e)}")
+        logging.error(f"Unexpected error in analytics dashboard: {e}")
     
     # Display plots if available
     st.subheader("Visualizations")
