@@ -53,6 +53,7 @@ xmltodict
 # Plotting/Visualization (for Streamlit charts)
 plotly
 matplotlib
+seaborn
 
 # Additional dependencies that might be needed
 typing-extensions
