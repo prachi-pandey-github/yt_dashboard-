@@ -8,12 +8,15 @@ from typing import List, Optional, Dict, Any
 import logging
 import sys
 import os
+from urllib.parse import quote_plus, urlparse, parse_qs
+import re
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.models import VideoMetadata, ChannelInfo
 from utils.config import get_settings
+from database.json_storage import JSONStorage
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +40,49 @@ class MongoDBClient:
         self.db = None
         self.collection = None
         self.channels_collection = None
+        self.use_json_fallback = False
+        self.json_storage = None
         
         self._connect()
         self._initialized = True
     
+    def _encode_mongodb_uri(self, uri: str) -> str:
+        """Encode MongoDB URI to handle special characters in username/password"""
+        try:
+            # Check if this is a MongoDB Atlas URI that needs encoding
+            if "mongodb+srv://" in uri or "mongodb://" in uri:
+                # Extract username and password using regex
+                pattern = r'mongodb(\+srv)?://([^:]+):([^@]+)@(.+)'
+                match = re.match(pattern, uri)
+                
+                if match:
+                    protocol = f"mongodb{match.group(1) or ''}"
+                    username = match.group(2)
+                    password = match.group(3)
+                    host_and_params = match.group(4)
+                    
+                    # URL encode username and password
+                    encoded_username = quote_plus(username)
+                    encoded_password = quote_plus(password)
+                    
+                    # Reconstruct the URI
+                    encoded_uri = f"{protocol}://{encoded_username}:{encoded_password}@{host_and_params}"
+                    return encoded_uri
+            
+            return uri  # Return original if no encoding needed
+        except Exception as e:
+            logger.warning(f"Could not encode MongoDB URI: {e}")
+            return uri  # Return original URI if encoding fails
+
     def _connect(self):
         """Establish MongoDB connection"""
         try:
             mongodb_uri = self.settings.effective_mongodb_uri
+            # Encode the URI to handle special characters
+            encoded_uri = self._encode_mongodb_uri(mongodb_uri)
+            
             self.client = MongoClient(
-                mongodb_uri,
+                encoded_uri,
                 serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=5000,
                 socketTimeoutMS=5000
@@ -65,14 +101,20 @@ class MongoDBClient:
             logger.info("✅ Successfully connected to MongoDB")
             
         except ConnectionFailure as e:
-            error_msg = f"❌ MongoDB connection failed: {e}"
-            if "localhost" in mongodb_uri:
-                error_msg += "\n💡 For Streamlit Cloud deployment, you need to use MongoDB Atlas instead of localhost. Please configure MONGODB_URI in Streamlit secrets."
-            logger.error(error_msg)
-            raise ConnectionFailure(error_msg)
+            logger.warning(f"⚠️ MongoDB connection failed, using JSON fallback: {e}")
+            self._setup_json_fallback()
         except Exception as e:
-            error_msg = f"❌ Unexpected MongoDB error: {e}"
-            logger.error(error_msg)
+            logger.warning(f"⚠️ MongoDB error, using JSON fallback: {e}")
+            self._setup_json_fallback()
+    
+    def _setup_json_fallback(self):
+        """Setup JSON file storage as fallback"""
+        try:
+            self.use_json_fallback = True
+            self.json_storage = JSONStorage()
+            logger.info("✅ Using JSON file storage as fallback")
+        except Exception as e:
+            logger.error(f"❌ Failed to setup JSON fallback: {e}")
             raise
     
     def _create_indexes(self):
@@ -94,6 +136,9 @@ class MongoDBClient:
         Insert video metadata with idempotency
         Returns True if successful, False if duplicate
         """
+        if self.use_json_fallback:
+            return self.json_storage.insert_video(video_data.dict())
+        
         try:
             result = self.collection.insert_one(video_data.dict())
             logger.info(f"✅ Inserted video: {video_data.video_id}")
@@ -125,6 +170,8 @@ class MongoDBClient:
     
     def get_video_count_by_channel(self, channel_id: str) -> int:
         """Get count of videos for a channel"""
+        if self.use_json_fallback:
+            return self.json_storage.get_video_count_by_channel(channel_id)
         return self.collection.count_documents({"channel_id": channel_id})
     
     def search_videos(self, query: str, channel_id: Optional[str] = None, 
