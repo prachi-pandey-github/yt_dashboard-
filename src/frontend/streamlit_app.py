@@ -192,7 +192,7 @@ def render_analytics_dashboard():
         with st.spinner("Generating report..."):
             try:
                 st.write(f"📊 Generating report for channel: {channel_option}")
-                tools = YouTubeAnalysisTools()
+                tools = st.session_state.tools  # Use tools from session state
                 stats = tools.get_upload_statistics(channel_option, days=30)
                 
                 st.write("Debug - Stats received:", stats)
