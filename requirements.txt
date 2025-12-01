@@ -1,0 +1,56 @@
+# Web Framework
+fastapi
+uvicorn
+pydantic
+
+# Frontend
+streamlit
+
+# Database
+pymongo
+motor
+
+# YouTube Data Extraction
+yt-dlp
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+
+# AI/LLM
+langchain
+openai
+
+# HTTP Requests & CORS
+aiohttp
+httpx
+requests
+
+# Environment & Configuration
+python-dotenv
+pydantic-settings
+
+# Data Processing
+pandas
+numpy
+
+# Date/Time
+python-dateutil
+pytz
+
+# Logging
+loguru
+
+# Async Support
+asyncio-throttle
+
+# Webhook/Subscription Handling
+feedparser
+xmltodict
+
+# Development & Testing
+pytest
+pytest-asyncio
+
+# Additional utilities
+typing-extensions
